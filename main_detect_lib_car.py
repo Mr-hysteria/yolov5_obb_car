@@ -1,6 +1,5 @@
 """
-这个文件是抓取与放置的文件，默认是抓取两次
-一次是倾斜摆放，一次是竖直摆放
+这个文件是抓取两次，一次是倾斜，一次是平躺
 """
 
 from concurrent.futures import thread
@@ -40,22 +39,23 @@ key = 0
 angle = 0
 pianyi = 0
 
+
 # socket new
 def server():
-    global mutex 
-    global send_flag1 
+    global mutex
+    global send_flag1
     global send_flag2
     global send_flag3
-    global grasp_flag 
-    global loose_flag 
-    global in_place_flag 
-    
-    serv = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-    serv.bind(('127.0.0.1',8899))
+    global grasp_flag
+    global loose_flag
+    global in_place_flag
+
+    serv = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    serv.bind(('127.0.0.1', 8899))
     serv.listen(2)
     while True:
-        conn,addr = serv.accept()
-        print(conn,addr)
+        conn, addr = serv.accept()
+        print(conn, addr)
         while True:
             msg = conn.recv(1024)
             if msg:
@@ -68,7 +68,7 @@ def server():
                     while True:
                         if in_place_flag == True:
                             mutex.acquire()
-                            conn.send(bytes('in place','utf8'))
+                            conn.send(bytes('in place', 'utf8'))
                             print('send: in place')
                             in_place_flag = False
                             mutex.release()
@@ -80,7 +80,7 @@ def server():
                     while True:
                         if grasp_flag == True:
                             mutex.acquire()
-                            conn.send(bytes('succeed','utf8'))
+                            conn.send(bytes('succeed', 'utf8'))
                             print('send: succeed')
                             grasp_flag = False
                             mutex.release()
@@ -92,11 +92,13 @@ def server():
                     while True:
                         if loose_flag == True:
                             mutex.acquire()
-                            conn.send(bytes('placed','utf8'))
+                            conn.send(bytes('placed', 'utf8'))
                             print('send: placed')
                             loose_flag = False
                             mutex.release()
                             break
+
+
 #############################
 mutex = threading.Lock()
 send_flag1 = False
@@ -130,30 +132,31 @@ model.warmup(imgsz=(1, 3, *imgsz), half=half)  # warmup
 def move_1():
     global camera_coordinate_4d
     global erobot
-    #while True:
+    # while True:
     #     if erobot.check_running():  # 检查是否还在运行，停稳后再运动防止跳变
     #         time.sleep(1)
     #         continue
     robot_pos = erobot.get_coords()
     A = camera_coordinate_4d
-        # position = [robot_pos[0], robot_pos[1] + A[0], robot_pos[2] - A[1]-15, initP[3], initP[4], initP[5]]  # 桌子上
-        # 用实时的末尾坐标，防止180度突变,停稳后一般不会突变
-        # position = [robot_pos[0] + A[0], robot_pos[1], robot_pos[2] - A[1] - 10, robot_pos[3], robot_pos[4],
-        #             robot_pos[5]]  # 小车上
-    position = [robot_pos[0] , robot_pos[1] -A[0], robot_pos[2] - A[1] -5, robot_pos[3], robot_pos[4],robot_pos[5]]  # 小车上2
+    # position = [robot_pos[0], robot_pos[1] + A[0], robot_pos[2] - A[1]-15, initP[3], initP[4], initP[5]]  # 桌子上
+    # 用实时的末尾坐标，防止180度突变,停稳后一般不会突变
+    # position = [robot_pos[0] + A[0], robot_pos[1], robot_pos[2] - A[1] - 10, robot_pos[3], robot_pos[4],
+    #             robot_pos[5]]  # 小车上
+    position = [robot_pos[0], robot_pos[1] - A[0], robot_pos[2] - A[1] - 5, robot_pos[3], robot_pos[4],
+                robot_pos[5]]  # 小车上2
 
-        # print('末端需要移动到的位置：\n', position)
+    # print('末端需要移动到的位置：\n', position)
     erobot.set_coords(position, 2000)
-        # time.sleep(8)  # 此处不能用wait_command_done()，不然后台会被冻结。时间增加到8s，使机械臂完全停稳，防止跳变
-        # time.sleep(4)
-        # print("如果调整好则按ESC或者q")
-        #global key
-        # Press esc or 'q' to close the image window
-        #if key & 0xFF == ord('q') or key == 27:
+    # time.sleep(8)  # 此处不能用wait_command_done()，不然后台会被冻结。时间增加到8s，使机械臂完全停稳，防止跳变
+    # time.sleep(4)
+    # print("如果调整好则按ESC或者q")
+    # global key
+    # Press esc or 'q' to close the image window
+    # if key & 0xFF == ord('q') or key == 27:
     global pianyi
     pianyi = angle - 89
-            #cv2.destroyAllWindows()
-            #break
+    # cv2.destroyAllWindows()
+    # break
 
 
 def move_3():
@@ -174,10 +177,10 @@ def move_2():
         pos = erobot.get_coords()
         # position = [A[0] + 110, A[1], A[2], pos[3], pos[4], pos[5]]  # 桌子上
         # position = [A[0], A[1] - 110, A[2], pos[3], pos[4], pos[5]]  # 小车上
-        if pos[5]>70:
-	        position = [A[0]-110, A[1] , A[2], pos[3], pos[4], pos[5]]
+        if pos[5] > 70:
+            position = [A[0] - 110, A[1], A[2], pos[3], pos[4], pos[5]]
         else:
-	        position = [A[0]-110, A[1], A[2], pos[3], pos[4], pos[5]]  # 小车上2
+            position = [A[0] - 110, A[1], A[2], pos[3], pos[4], pos[5]]  # 小车上2
         erobot.set_coords(position, 2000)
         judge = erobot.wait_command_done()
         time.sleep(1)
@@ -297,7 +300,7 @@ def realsense_detect():  # 进行目标识别，显示目标识别效果，返�
     many_time = 1
     try:
         while True:
-            many_time+=1
+            many_time += 1
             # 获取深度图以及彩色图像
             frames = pipeline.wait_for_frames()
 
@@ -321,8 +324,8 @@ def realsense_detect():  # 进行目标识别，显示目标识别效果，返�
             # 需要输入BGR格式
             boxs, label = yolo_run(color_image)
             dectshow(color_image, boxs, depth_frame, intr, label)  # 用的是depth_frame(没有转化成np格式的)，因为要调用get_distance
-            if many_time%15==0 or many_time==2:
-                print("capture_frame:",many_time)
+            if many_time % 15 == 0 or many_time == 2:
+                print("capture_frame:", many_time)
                 move_1()
             # 当获取为nan的时候，虽然跳过了，但是还是会报错
 
@@ -338,7 +341,7 @@ def realsense_detect():  # 进行目标识别，显示目标识别效果，返�
 
             # Press esc or 'q' to close the image window
             if key & 0xFF == ord('q') or key == 27:
-            # if key == 27:
+                # if key == 27:
                 cv2.destroyAllWindows()
                 break
     finally:
@@ -484,9 +487,10 @@ def yolo_run(imy,  # 不进行初始化
             polygon_list_all.append(aa)
             return polygon_list_all, 'no object'
 
-#erobot.power_on()
-#time.sleep(2)
-#erobot.state_on()
+
+# erobot.power_on()
+# time.sleep(2)
+# erobot.state_on()
 '''
 #socket进行监听
 localhost = '/home/nvidia/uds_socket'
@@ -504,7 +508,6 @@ while True:
     if data == b"begin":
         break
 '''
-
 
 numbers1 = 2
 while numbers1 >= 1:
@@ -556,7 +559,7 @@ while numbers1 >= 1:
 
     # 路点2
     # erobot.set_angles([0, -30, -60, -90, -90, 60], 1080) yuanlaide
-    erobot.set_angles([0,-90,0,-90,-90,60], 1080)
+    erobot.set_angles([0, -90, 0, -90, -90, 60], 1080)
     time.sleep(1)
     erobot.wait_command_done()
 
@@ -572,12 +575,12 @@ while numbers1 >= 1:
     mutex.acquire()
 
     # fangzhi
-    if numbers1==2:
-        erobot.set_angles([0,-114.4,90,-155.3,-90,60],1080)
+    if numbers1 == 2:
+        erobot.set_angles([0, -114.4, 90, -155.3, -90, 60], 1080)
         time.sleep(1)
         erobot.wait_command_done()
-    elif numbers1==1:
-        erobot.set_angles([-82,-113.2,90,-152.8,-7.2,56.6],1080)
+    elif numbers1 == 1:
+        erobot.set_angles([-82, -113.2, 90, -152.8, -7.2, 56.6], 1080)
         time.sleep(1)
         erobot.wait_command_done()
 
@@ -590,17 +593,15 @@ while numbers1 >= 1:
     erobot.set_digital_out(1, 0)
     erobot.set_digital_out(0, 1)
     time.sleep(2)
-    numbers1-=1
+    numbers1 -= 1
 
-    erobot.set_angles([0,-90,0,-90,-90,60], 1080)
+    erobot.set_angles([0, -90, 0, -90, -90, 60], 1080)
     time.sleep(1)
     erobot.wait_command_done()
 
     loose_flag = True
     send_flag3 = False
     mutex.release()
-
-
 
 print("ESC退出程序")
 # 路点3
