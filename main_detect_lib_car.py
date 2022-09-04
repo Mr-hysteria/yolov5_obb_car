@@ -138,12 +138,13 @@ def move_1():
     #         continue
     robot_pos = erobot.get_coords()
     A = camera_coordinate_4d
-    # position = [robot_pos[0], robot_pos[1] + A[0], robot_pos[2] - A[1]-15, initP[3], initP[4], initP[5]]  # 桌子上
-    # 用实时的末尾坐标，防止180度突变,停稳后一般不会突变
-    # position = [robot_pos[0] + A[0], robot_pos[1], robot_pos[2] - A[1] - 10, robot_pos[3], robot_pos[4],
-    #             robot_pos[5]]  # 小车上
-    position = [robot_pos[0], robot_pos[1] - A[0], robot_pos[2] - A[1] - 5, robot_pos[3], robot_pos[4],
-                robot_pos[5]]  # 小车上2
+
+    if robot_pos[?] <>:  # 通过某一个关节的范围判断是哪种状态
+        position = [robot_pos[0], robot_pos[1] - A[0], robot_pos[2] - A[1] - 5, robot_pos[3], robot_pos[4],
+                    robot_pos[5]]  # 小车上，且是识别竖直物体的时候
+    else:
+        position = [robot_pos[0] - A[1] - 5, robot_pos[1] - A[0], robot_pos[2], robot_pos[3], robot_pos[4],
+                    robot_pos[5]]  # 小车上，且是识别躺着物体的时候
 
     # print('末端需要移动到的位置：\n', position)
     erobot.set_coords(position, 2000)
@@ -154,7 +155,7 @@ def move_1():
     # Press esc or 'q' to close the image window
     # if key & 0xFF == ord('q') or key == 27:
     global pianyi
-    pianyi = angle - 89
+    pianyi = angle - 90
     # cv2.destroyAllWindows()
     # break
 
@@ -175,12 +176,10 @@ def move_2():
     while True:
         A = base_coordinate_4d
         pos = erobot.get_coords()
-        # position = [A[0] + 110, A[1], A[2], pos[3], pos[4], pos[5]]  # 桌子上
-        # position = [A[0], A[1] - 110, A[2], pos[3], pos[4], pos[5]]  # 小车上
-        if pos[5] > 70:
-            position = [A[0] - 110, A[1], A[2], pos[3], pos[4], pos[5]]
+        if pos[?]<?:
+            position = [A[0] - 110, A[1], A[2], pos[3], pos[4], pos[5]]  # 小车上，且是识别竖直物体的时候
         else:
-            position = [A[0] - 110, A[1], A[2], pos[3], pos[4], pos[5]]  # 小车上2
+            position = [A[0], A[1], A[2] + 130, pos[3], pos[4], pos[5]]  # 小车上2,且是识别躺着物体的时候
         erobot.set_coords(position, 2000)
         judge = erobot.wait_command_done()
         time.sleep(1)
@@ -324,7 +323,7 @@ def realsense_detect():  # 进行目标识别，显示目标识别效果，返�
             # 需要输入BGR格式
             boxs, label = yolo_run(color_image)
             dectshow(color_image, boxs, depth_frame, intr, label)  # 用的是depth_frame(没有转化成np格式的)，因为要调用get_distance
-            if many_time % 15 == 0 or many_time == 2:
+            if many_time % 10 == 0 or many_time == 2:
                 print("capture_frame:", many_time)
                 move_1()
             # 当获取为nan的时候，虽然跳过了，但是还是会报错
@@ -517,17 +516,28 @@ while numbers1 >= 1:
         if send_flag1 == True:
             break
     mutex.acquire()
-    erobot.set_angles(initA, 1080)
-    erobot.set_digital_out(1, 1)
-    erobot.set_digital_out(0, 0)
-    mytime = 10
-    while mytime > 0:
-        print("校准倒计时：", mytime)
-        mytime -= 1
-        time.sleep(1)
+    if numbers1 == 2:
+        erobot.set_angles(initA, 1080)
+        erobot.set_digital_out(1, 1)
+        erobot.set_digital_out(0, 0)
+        mytime = 10
+        while mytime > 0:
+            print("校准倒计时：", mytime)
+            mytime -= 1
+            time.sleep(1)
+    elif numbers1 == 1:  # 从上往下的位置需要重新进行设定
+        erobot.set_angles([?], 1080)  # 最好是角度,这里需要设置
+        erobot.set_digital_out(1, 1)
+        erobot.set_digital_out(0, 0)
+        mytime = 10
+        while mytime > 0:
+            print("校准倒计时：", mytime)
+            mytime -= 1
+            time.sleep(1)
     in_place_flag = True
     send_flag1 = False
     mutex.release()
+
     # 2.yolo开始检测，并等待倒计时结束
     while True:
         if send_flag2 == True:
